@@ -1,21 +1,27 @@
 <script setup>
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { CheckIcon } from '@heroicons/vue/24/outline'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import CodeEditor from '../components/CodeEditor.vue'
 import ConsoleOutput from '../components/ConsoleOutput.vue'
+import { useAuth } from '../composables/useAuth'
 import { api } from '../composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
+const { isAdmin } = useAuth()
 
 const fileName = ref('')
+const verified = ref(false)
 const code = ref('// Loading...\n')
 const logs = ref([])
 const saving = ref(false)
 const loading = ref(true)
-const horizontal = ref(true)
+const horizontal = ref(false)
+const editingName = ref(false)
+const renameValue = ref('')
 
 async function loadFile() {
   const id = route.params.id
@@ -27,6 +33,7 @@ async function loadFile() {
   try {
     const file = await api(`/files/${id}`)
     fileName.value = file.name
+    verified.value = file.verified || false
     code.value = file.content || '// New file\nconsole.log("Hello!")\n'
   } catch (e) {
     alert(e.message)
@@ -72,15 +79,90 @@ async function save() {
   }
 }
 
+function startRename() {
+  editingName.value = true
+  renameValue.value = fileName.value || ''
+}
+
+function cancelRename() {
+  editingName.value = false
+  renameValue.value = ''
+}
+
+async function saveRename() {
+  const name = renameValue.value.trim() || 'untitled.js'
+  const finalName = name.endsWith('.js') ? name : name + '.js'
+  if (!route.params.id) return
+  try {
+    await api(`/files/${route.params.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name: finalName }),
+    })
+    fileName.value = finalName
+  } catch (e) {
+    alert(e.message)
+  }
+  cancelRename()
+}
+
+async function toggleVerified() {
+  if (!isAdmin.value || !route.params.id) return
+  try {
+    const updated = await api(`/files/${route.params.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ verified: !verified.value }),
+    })
+    verified.value = updated.verified
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
 watch(() => route.params.id, loadFile, { immediate: true })
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-slate-50">
+  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
     <header class="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1.5 shadow-sm">
       <div class="flex items-center gap-3">
         <router-link to="/files" class="text-sm text-blue-600 hover:underline">← Back</router-link>
-        <h1 class="text-sm font-medium text-slate-800">{{ fileName || 'Loading...' }}</h1>
+        <div class="flex items-center gap-1.5">
+          <input
+            v-if="editingName"
+            v-model="renameValue"
+            type="text"
+            class="max-w-[240px] rounded border border-slate-300 px-1.5 py-0.5 text-sm"
+            @keydown.enter="saveRename"
+            @keydown.esc="cancelRename"
+            @blur="saveRename"
+          />
+          <h1
+            v-else
+            class="cursor-pointer text-sm font-medium text-slate-800 hover:text-blue-600"
+            title="Click to rename"
+            @click="startRename"
+          >
+            {{ fileName || 'Loading...' }}
+          </h1>
+          <template v-if="!editingName">
+            <button
+              v-if="isAdmin"
+              type="button"
+              class="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors"
+              :class="verified ? 'border-green-500 bg-green-50 text-green-600 hover:bg-green-100' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'"
+              :title="verified ? 'Unverify' : 'Verify'"
+              @click="toggleVerified"
+            >
+              <CheckIcon v-if="verified" class="h-3 w-3" stroke-width="3" />
+            </button>
+            <span
+              v-else-if="verified"
+              class="rounded bg-green-100 px-1 py-0.5 text-[10px] font-medium text-green-700"
+            >
+              Verified
+            </span>
+          </template>
+        </div>
       </div>
       <div class="flex items-center gap-1.5">
         <button
@@ -116,9 +198,6 @@ watch(() => route.params.id, loadFile, { immediate: true })
         </Pane>
         <Pane :min-size="10" :size="30">
           <div class="flex h-full flex-col border-t border-slate-200 bg-white">
-            <h2 class="shrink-0 border-b border-slate-200 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-slate-500">
-              Console
-            </h2>
             <div class="flex-1 min-h-0 overflow-auto">
               <ConsoleOutput :logs="logs" />
             </div>

@@ -24,9 +24,10 @@ type CreateFileRequest struct {
 }
 
 type UpdateFileRequest struct {
-	Name    *string `json:"name"`
-	Path    *string `json:"path"`
-	Content *string `json:"content"`
+	Name     *string `json:"name"`
+	Path     *string `json:"path"`
+	Content  *string `json:"content"`
+	Verified *bool   `json:"verified"`
 }
 
 func (h *FilesHandler) List(c *gin.Context) {
@@ -118,6 +119,9 @@ func (h *FilesHandler) Update(c *gin.Context) {
 	}
 	if req.Content != nil {
 		file.Content = *req.Content
+	}
+	if req.Verified != nil && role == "admin" {
+		file.Verified = *req.Verified
 	}
 	if err := h.fileRepo.Update(file); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

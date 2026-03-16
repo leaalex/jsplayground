@@ -13,6 +13,7 @@ type File struct {
 	Name      string         `gorm:"not null" json:"name"`
 	Path      string         `gorm:"default:''" json:"path"`
 	Content   string         `gorm:"type:text" json:"content"`
+	Verified  bool           `gorm:"default:false" json:"verified"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`

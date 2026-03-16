@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { PencilSquareIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { useAuth } from '../composables/useAuth'
 import { api } from '../composables/useApi'
 
@@ -10,6 +11,8 @@ const { isAdmin, logout } = useAuth()
 const files = ref([])
 const loading = ref(false)
 const importInputRef = ref(null)
+const editingFileId = ref(null)
+const editingName = ref('')
 
 const groupedFiles = computed(() => {
   if (!isAdmin.value) {
@@ -69,6 +72,46 @@ async function deleteFile(file, e) {
 
 function openFile(file) {
   router.push({ name: 'playground', params: { id: file.id } })
+}
+
+async function toggleVerified(file) {
+  if (!isAdmin.value) return
+  try {
+    const updated = await api(`/files/${file.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ verified: !file.verified }),
+    })
+    file.verified = updated.verified
+  } catch (e) {
+    alert(e.message)
+  }
+}
+
+function startRename(file) {
+  editingFileId.value = file.id
+  editingName.value = file.name || ''
+}
+
+function cancelRename() {
+  editingFileId.value = null
+  editingName.value = ''
+}
+
+async function saveRename() {
+  const id = editingFileId.value
+  if (!id) return
+  const name = editingName.value.trim() || 'untitled.js'
+  try {
+    const updated = await api(`/files/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name: name.endsWith('.js') ? name : name + '.js' }),
+    })
+    const f = files.value.find((x) => x.id === id)
+    if (f) f.name = updated.name
+  } catch (e) {
+    alert(e.message)
+  }
+  cancelRename()
 }
 
 function triggerImport() {
@@ -155,10 +198,18 @@ onMounted(load)
                 {{ group.user.fullname || group.user.email }} ({{ group.user.email }})
               </span>
             </div>
-            <table class="w-full">
+            <table class="w-full table-fixed">
+              <colgroup>
+                <col style="width: 32%" />
+                <col style="width: 36px" />
+                <col style="width: 26%" />
+                <col style="width: 18%" />
+                <col style="width: auto" />
+              </colgroup>
               <thead>
                 <tr class="border-b border-slate-200 text-left text-xs text-slate-500">
                   <th class="px-4 py-2 font-medium">Name</th>
+                  <th class="px-1 py-2 text-center font-medium">✓</th>
                   <th class="px-4 py-2 font-medium">Path</th>
                   <th class="px-4 py-2 font-medium">Updated</th>
                   <th class="px-4 py-2 font-medium">Actions</th>
@@ -171,18 +222,54 @@ onMounted(load)
                   class="border-b border-slate-100 hover:bg-slate-50"
                 >
                   <td class="px-4 py-2">
-                    <button
-                      type="button"
-                      class="text-xs font-medium text-blue-600 hover:underline"
-                      @click="openFile(file)"
-                    >
-                      {{ file.name }}
-                    </button>
+                    <div class="flex min-w-0 items-center gap-1">
+                      <template v-if="editingFileId === file.id">
+                        <input
+                          v-model="editingName"
+                          type="text"
+                          class="min-w-0 flex-1 rounded border border-slate-300 px-1.5 py-0.5 text-xs"
+                          @keydown.enter="saveRename"
+                          @keydown.esc="cancelRename"
+                          @blur="saveRename"
+                        />
+                      </template>
+                      <template v-else>
+                        <button
+                          type="button"
+                          class="min-w-0 truncate text-left text-xs font-medium text-blue-600 hover:underline"
+                          @click="openFile(file)"
+                        >
+                          {{ file.name }}
+                        </button>
+                        <button
+                          type="button"
+                          class="shrink-0 rounded p-0.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                          title="Rename"
+                          @click.stop="startRename(file)"
+                        >
+                          <PencilSquareIcon class="h-3.5 w-3.5" />
+                        </button>
+                      </template>
+                    </div>
                   </td>
-                  <td class="px-4 py-2 text-xs text-slate-600">{{ file.path || '-' }}</td>
-                  <td class="px-4 py-2 text-xs text-slate-500">{{ formatDate(file.updated_at) }}</td>
+                  <td class="px-1 py-2 text-center align-middle">
+                    <template v-if="isAdmin">
+                      <button
+                        type="button"
+                        class="inline-flex h-4 w-4 items-center justify-center rounded border transition-colors"
+                        :class="file.verified ? 'border-green-500 bg-green-50 text-green-600 hover:bg-green-100' : 'border-slate-300 hover:border-slate-400 hover:bg-slate-50'"
+                        :title="file.verified ? 'Unverify' : 'Verify'"
+                        @click="toggleVerified(file)"
+                      >
+                        <CheckIcon v-if="file.verified" class="h-3 w-3" stroke-width="3" />
+                      </button>
+                    </template>
+                    <CheckIcon v-else-if="file.verified" class="mx-auto h-4 w-4 text-green-600" stroke-width="2.5" />
+                  </td>
+                  <td class="truncate px-4 py-2 text-xs text-slate-600" :title="file.path || '-'">{{ file.path || '-' }}</td>
+                  <td class="truncate px-4 py-2 text-xs text-slate-500">{{ formatDate(file.updated_at) }}</td>
                   <td class="px-4 py-2">
-                    <div class="flex gap-1">
+                    <div class="flex flex-wrap gap-1">
                       <button
                         type="button"
                         class="rounded px-1.5 py-0.5 text-xs text-blue-600 hover:bg-blue-50"
