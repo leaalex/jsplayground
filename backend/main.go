@@ -69,6 +69,7 @@ func main() {
 		protected := api.Group("")
 		protected.Use(middleware.Auth(cfg.JWTSecret))
 		{
+			protected.GET("/auth/me", authHandler.Me)
 			protected.GET("/files", filesHandler.List)
 			protected.POST("/files", filesHandler.Create)
 			protected.GET("/files/:id", filesHandler.Get)

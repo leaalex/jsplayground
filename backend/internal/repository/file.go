@@ -22,7 +22,7 @@ func (r *FileRepository) List(userID uint) ([]models.File, error) {
 
 func (r *FileRepository) ListAll() ([]models.File, error) {
 	var files []models.File
-	err := r.db.Order("updated_at DESC").Find(&files).Error
+	err := r.db.Preload("User").Order("updated_at DESC").Find(&files).Error
 	return files, err
 }
 

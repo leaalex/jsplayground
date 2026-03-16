@@ -34,6 +34,9 @@ type LoginRequest struct {
 
 type AuthResponse struct {
 	AccessToken string `json:"accessToken"`
+	Role        string `json:"role"`
+	Fullname    string `json:"fullname"`
+	Email       string `json:"email"`
 }
 
 func (h *AuthHandler) Register(c *gin.Context) {
@@ -71,7 +74,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create token"})
 		return
 	}
-	c.JSON(http.StatusCreated, AuthResponse{AccessToken: token})
+	c.JSON(http.StatusCreated, AuthResponse{
+		AccessToken: token,
+		Role:        role,
+		Fullname:    user.Fullname,
+		Email:       user.Email,
+	})
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -98,7 +106,48 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create token"})
 		return
 	}
-	c.JSON(http.StatusOK, AuthResponse{AccessToken: token})
+	c.JSON(http.StatusOK, AuthResponse{
+		AccessToken: token,
+		Role:        role,
+		Fullname:    user.Fullname,
+		Email:       user.Email,
+	})
+}
+
+type MeResponse struct {
+	ID       uint   `json:"id"`
+	Email    string `json:"email"`
+	Fullname string `json:"fullname"`
+	Role     string `json:"role"`
+}
+
+func (h *AuthHandler) Me(c *gin.Context) {
+	v, _ := c.Get("userID")
+	var userID uint
+	switch id := v.(type) {
+	case float64:
+		userID = uint(id)
+	case uint:
+		userID = id
+	default:
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user"})
+		return
+	}
+	user, err := h.userRepo.FindByID(userID)
+	if err != nil || user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		return
+	}
+	role := user.Role
+	if role == "" {
+		role = "student"
+	}
+	c.JSON(http.StatusOK, MeResponse{
+		ID:       user.ID,
+		Email:    user.Email,
+		Fullname: user.Fullname,
+		Role:     role,
+	})
 }
 
 func (h *AuthHandler) createToken(userID uint, role string) (string, error) {

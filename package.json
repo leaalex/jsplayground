@@ -9,12 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "monaco-editor": "^0.45.0",
+    "splitpanes": "^4.0.4",
     "vue": "^3.4.21",
-    "vue-router": "^4.4.5",
-    "monaco-editor": "^0.45.0"
+    "vue-router": "^4.4.5"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
     "@vitejs/plugin-vue": "^5.0.4",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.1",
     "vite": "^5.2.8",
     "vite-plugin-monaco-editor-esm": "^2.0.2"
   }

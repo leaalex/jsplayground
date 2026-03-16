@@ -18,7 +18,7 @@ onMounted(async () => {
   editor = monaco.editor.create(editorRef.value, {
     value: props.modelValue,
     language: 'javascript',
-    theme: 'vs-dark',
+    theme: 'vs',
     automaticLayout: true,
     minimap: { enabled: false },
     lineNumbers: 'on',
@@ -59,6 +59,5 @@ watch(
 .code-editor {
   width: 100%;
   height: 100%;
-  min-height: 200px;
 }
 </style>
