@@ -1,19 +1,26 @@
-# Development compose - no Caddy, direct port access
-# Usage: docker compose up -d
-
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+    depends_on:
+      - frontend
+
   frontend:
     build: .
-    ports:
-      - "8081:80"
+    restart: unless-stopped
     depends_on:
       - backend
-    restart: unless-stopped
 
   backend:
     build: ./backend
     environment:
-      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_SECRET=${JWT_SECRET}
       - ADMIN_EMAIL=${ADMIN_EMAIL:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - DB_PATH=/data/playground.db
@@ -24,3 +31,4 @@ services:
 
 volumes:
   playground-data:
+  caddy-data:

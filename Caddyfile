@@ -1,0 +1,3 @@
+design-x-dev.online {
+    reverse_proxy frontend:80
+}

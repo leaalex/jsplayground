@@ -20,11 +20,22 @@ The frontend proxies `/api` to `http://localhost:3000` in dev mode.
 
 ## Docker
 
+**Development** (без SSL, прямой доступ по порту):
 ```bash
 docker compose up --build
 ```
 
-Open http://localhost:8080
+Open http://localhost:8081
+
+**Production** (Caddy + SSL для design-x-dev.online):
+```bash
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Перед запуском:
+1. Настройте DNS: `design-x-dev.online` → IP сервера
+2. Убедитесь, что порты 80 и 443 открыты
+3. Caddy автоматически получит SSL-сертификат от Let's Encrypt
 
 ## Roles
 
