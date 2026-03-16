@@ -1,0 +1,23 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - DB_PATH=/data/playground.db
+      - PORT=3000
+    volumes:
+      - playground-data:/data
+    restart: unless-stopped
+
+volumes:
+  playground-data:

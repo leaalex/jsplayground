@@ -1,0 +1,22 @@
+package models
+
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type File struct {
+	ID        uint           `gorm:"primarykey" json:"id"`
+	UserID    uint           `gorm:"index;not null" json:"user_id"`
+	Name      string         `gorm:"not null" json:"name"`
+	Path      string         `gorm:"default:''" json:"path"`
+	Content   string         `gorm:"type:text" json:"content"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (File) TableName() string {
+	return "files"
+}
