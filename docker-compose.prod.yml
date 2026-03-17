@@ -26,9 +26,8 @@ services:
       - DB_PATH=/data/playground.db
       - PORT=3000
     volumes:
-      - playground-data:/data
+      - ./data:/data
     restart: unless-stopped
 
 volumes:
-  playground-data:
   caddy-data:

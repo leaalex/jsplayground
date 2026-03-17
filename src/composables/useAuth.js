@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 const API_BASE = '/api'
 
@@ -60,6 +61,7 @@ export function useAuth() {
 
   function logout() {
     setToken(null)
+    useRouter().push('/login')
   }
 
   return {
