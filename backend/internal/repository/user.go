@@ -35,3 +35,13 @@ func (r *UserRepository) FindByID(id uint) (*models.User, error) {
 	}
 	return &user, nil
 }
+
+func (r *UserRepository) ListAll() ([]models.User, error) {
+	var users []models.User
+	err := r.db.Order("created_at DESC").Find(&users).Error
+	return users, err
+}
+
+func (r *UserRepository) Update(user *models.User) error {
+	return r.db.Save(user).Error
+}

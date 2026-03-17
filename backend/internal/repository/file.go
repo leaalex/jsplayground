@@ -28,7 +28,7 @@ func (r *FileRepository) ListAll() ([]models.File, error) {
 
 func (r *FileRepository) GetByID(id uint) (*models.File, error) {
 	var file models.File
-	err := r.db.First(&file, id).Error
+	err := r.db.Preload("User").First(&file, id).Error
 	if err != nil {
 		return nil, err
 	}

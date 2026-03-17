@@ -47,6 +47,7 @@ func main() {
 	fileRepo := repository.NewFileRepository(db)
 	authHandler := handlers.NewAuthHandler(userRepo, cfg.JWTSecret, cfg.AdminEmail)
 	filesHandler := handlers.NewFilesHandler(fileRepo)
+	usersHandler := handlers.NewUsersHandler(userRepo)
 	runHandler := handlers.NewRunHandler()
 
 	r := gin.Default()
@@ -75,6 +76,8 @@ func main() {
 			protected.GET("/files/:id", filesHandler.Get)
 			protected.PUT("/files/:id", filesHandler.Update)
 			protected.DELETE("/files/:id", filesHandler.Delete)
+			protected.GET("/users", usersHandler.List)
+			protected.PUT("/users/:id", usersHandler.Update)
 			protected.POST("/run", runHandler.Run)
 		}
 	}

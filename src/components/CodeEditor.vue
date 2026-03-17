@@ -8,7 +8,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue', 'run'])
+const emit = defineEmits(['update:modelValue', 'run', 'save'])
 
 const editorRef = ref(null)
 let editor = null
@@ -24,6 +24,7 @@ onMounted(async () => {
     lineNumbers: 'on',
     scrollBeyondLastLine: false,
     fontSize: 14,
+    fontFamily: "'IBM Plex Mono', monospace",
   })
 
   editor.onDidChangeModelContent(() => {
@@ -32,6 +33,9 @@ onMounted(async () => {
 
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
     emit('run')
+  })
+  editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+    emit('save')
   })
 })
 

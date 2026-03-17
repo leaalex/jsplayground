@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { CheckIcon } from '@heroicons/vue/24/outline'
 import { Splitpanes, Pane } from 'splitpanes'
@@ -11,9 +11,11 @@ import { api } from '../composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
-const { isAdmin } = useAuth()
+const { isAdmin, user } = useAuth()
 
 const fileName = ref('')
+const fileUserId = ref(null)
+const fileUser = ref(null)
 const verified = ref(false)
 const code = ref('// Loading...\n')
 const logs = ref([])
@@ -35,6 +37,8 @@ async function loadFile() {
     fileName.value = file.name
     verified.value = file.verified || false
     code.value = file.content || '// New file\nconsole.log("Hello!")\n'
+    fileUserId.value = file.user_id
+    fileUser.value = file.user
   } catch (e) {
     alert(e.message)
     router.push('/files')
@@ -118,6 +122,14 @@ async function toggleVerified() {
   }
 }
 
+const breadcrumbLabel = computed(() => {
+  if (fileUserId.value == null) return 'Your files'
+  const isOwn = user.value && fileUserId.value === user.value.id
+  if (isOwn) return 'Your files'
+  const u = fileUser.value
+  return (u?.fullname || u?.email || 'Unknown').trim() || 'Unknown'
+})
+
 watch(() => route.params.id, loadFile, { immediate: true })
 </script>
 
@@ -126,6 +138,10 @@ watch(() => route.params.id, loadFile, { immediate: true })
     <header class="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1.5 shadow-sm">
       <div class="flex items-center gap-3">
         <router-link to="/files" class="text-sm text-blue-600 hover:underline">← Back</router-link>
+        <div v-if="breadcrumbLabel" class="flex items-center gap-1 text-sm text-slate-500">
+          <span>{{ breadcrumbLabel }}</span>
+          <span class="text-slate-400">/</span>
+        </div>
         <div class="flex items-center gap-1.5">
           <input
             v-if="editingName"
@@ -176,9 +192,10 @@ watch(() => route.params.id, loadFile, { immediate: true })
         <button
           :disabled="saving"
           class="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          title="Save (Ctrl+S)"
           @click="save"
         >
-          {{ saving ? 'Saving...' : 'Save' }}
+          {{ saving ? 'Saving...' : 'Save (Ctrl+S)' }}
         </button>
         <button
           class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
@@ -193,7 +210,7 @@ watch(() => route.params.id, loadFile, { immediate: true })
       <Splitpanes :horizontal="horizontal" class="h-full">
         <Pane :min-size="35" :size="70">
           <div class="h-full">
-            <CodeEditor v-model="code" @run="handleRun" />
+            <CodeEditor v-model="code" @run="handleRun" @save="save" />
           </div>
         </Pane>
         <Pane :min-size="10" :size="30">
