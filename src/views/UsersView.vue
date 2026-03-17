@@ -2,11 +2,13 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { PencilSquareIcon } from '@heroicons/vue/24/outline'
+import AppHeader from '../components/AppHeader.vue'
+import AppFooter from '../components/AppFooter.vue'
 import { useAuth } from '../composables/useAuth'
 import { api } from '../composables/useApi'
 
 const router = useRouter()
-const { isAdmin, logout } = useAuth()
+const { isAdmin } = useAuth()
 
 const users = ref([])
 const loading = ref(false)
@@ -79,29 +81,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
-    <header class="border-b border-slate-200 bg-white px-4 py-2 shadow-sm">
-      <div class="mx-auto flex max-w-6xl items-center justify-between">
-        <img src="/logo.svg" alt="JS Playground" class="h-8 opacity-80" />
-        <div class="flex items-center gap-2">
-          <router-link
-            to="/files"
-            class="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Files
-          </router-link>
-          <button
-            type="button"
-            class="rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            @click="logout"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    </header>
+  <div class="flex min-h-screen flex-col bg-slate-50">
+    <AppHeader>
+      <router-link
+        to="/files"
+        class="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+      >
+        Files
+      </router-link>
+    </AppHeader>
 
-    <main class="mx-auto max-w-6xl px-4 py-4">
+    <main class="flex-1 px-2 py-4">
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-4 py-2">
           <h2 class="text-sm font-medium text-slate-800">Users</h2>
@@ -207,5 +197,7 @@ onMounted(() => {
         </template>
       </div>
     </main>
+
+    <AppFooter />
   </div>
 </template>

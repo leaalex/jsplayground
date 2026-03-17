@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { CheckIcon } from '@heroicons/vue/24/outline'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
+import AppHeader from '../components/AppHeader.vue'
+import AppFooter from '../components/AppFooter.vue'
 import CodeEditor from '../components/CodeEditor.vue'
 import ConsoleOutput from '../components/ConsoleOutput.vue'
 import { useAuth } from '../composables/useAuth'
@@ -135,9 +137,14 @@ watch(() => route.params.id, loadFile, { immediate: true })
 
 <template>
   <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
-    <header class="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1.5 shadow-sm">
-      <div class="flex items-center gap-3">
-        <router-link to="/files" class="text-sm text-blue-600 hover:underline">← Back</router-link>
+    <AppHeader>
+      <template #left>
+        <router-link
+          to="/files"
+          class="rounded border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        >
+          ← Back
+        </router-link>
         <div v-if="breadcrumbLabel" class="flex items-center gap-1 text-sm text-slate-500">
           <span>{{ breadcrumbLabel }}</span>
           <span class="text-slate-400">/</span>
@@ -179,34 +186,32 @@ watch(() => route.params.id, loadFile, { immediate: true })
             </span>
           </template>
         </div>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <button
-          type="button"
-          class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-50"
-          :title="horizontal ? 'Code left, console right' : 'Code top, console bottom'"
-          @click="horizontal = !horizontal"
-        >
-          {{ horizontal ? '⊟ Vertical' : '⊞ Horizontal' }}
-        </button>
-        <button
-          :disabled="saving"
-          class="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          title="Save (Ctrl+S)"
-          @click="save"
-        >
-          {{ saving ? 'Saving...' : 'Save (Ctrl+S)' }}
-        </button>
-        <button
-          class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
-          @click="handleRun"
-        >
-          Run (Ctrl+Enter)
-        </button>
-      </div>
-    </header>
+      </template>
+      <button
+        type="button"
+        class="rounded border border-slate-300 bg-white px-2 py-0.5 text-xs text-slate-600 hover:bg-slate-50"
+        :title="horizontal ? 'Code left, console right' : 'Code top, console bottom'"
+        @click="horizontal = !horizontal"
+      >
+        {{ horizontal ? '⊟ Vertical' : '⊞ Horizontal' }}
+      </button>
+      <button
+        :disabled="saving"
+        class="rounded border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+        title="Save (Ctrl+S)"
+        @click="save"
+      >
+        {{ saving ? 'Saving...' : 'Save (Ctrl+S)' }}
+      </button>
+      <button
+        class="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+        @click="handleRun"
+      >
+        Run (Ctrl+Enter)
+      </button>
+    </AppHeader>
 
-    <div class="flex-1 min-h-0">
+    <div class="flex-1 min-h-0 overflow-hidden">
       <Splitpanes :horizontal="horizontal" class="h-full">
         <Pane :min-size="35" :size="70">
           <div class="h-full">
@@ -222,5 +227,7 @@ watch(() => route.params.id, loadFile, { immediate: true })
         </Pane>
       </Splitpanes>
     </div>
+
+    <AppFooter />
   </div>
 </template>

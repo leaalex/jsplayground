@@ -2,11 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { PencilSquareIcon, CheckIcon, EyeIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import AppHeader from '../components/AppHeader.vue'
+import AppFooter from '../components/AppFooter.vue'
 import { useAuth } from '../composables/useAuth'
 import { api } from '../composables/useApi'
 
 const router = useRouter()
-const { isAdmin, logout, user } = useAuth()
+const { isAdmin, user } = useAuth()
 
 const files = ref([])
 const loading = ref(false)
@@ -19,6 +21,7 @@ const verifiedFilter = ref('all')
 const userFilter = ref('')
 const sortBy = ref('updated_at')
 const sortAsc = ref(false)
+const groupBy = ref('author')
 const selectedFileIds = ref(new Set())
 const previewFile = ref(null)
 
@@ -82,32 +85,54 @@ const filteredFiles = computed(() => {
 })
 
 const groupedFiles = computed(() => {
+  const list = filteredFiles.value
   if (!isAdmin.value) {
-    return [{ user: null, isOwn: false, files: filteredFiles.value }]
+    return [{ label: null, isOwn: false, files: list }]
   }
+
+  const mode = groupBy.value
+
+  if (mode === 'none') {
+    return [{ label: null, isOwn: false, files: list }]
+  }
+
+  if (mode === 'verified') {
+    const verified = list.filter((f) => f.verified)
+    const unverified = list.filter((f) => !f.verified)
+    return [
+      ...(verified.length > 0 ? [{ label: `Verified (${verified.length})`, isOwn: false, files: verified }] : []),
+      ...(unverified.length > 0 ? [{ label: `Not verified (${unverified.length})`, isOwn: false, files: unverified }] : []),
+    ]
+  }
+
   const currentUserId = user.value?.id
   const ownFiles = []
   const byUser = new Map()
-  for (const f of filteredFiles.value) {
+  for (const f of list) {
     if (currentUserId && f.user_id === currentUserId) {
       ownFiles.push(f)
       continue
     }
     const key = f.user ? `${f.user.email}` : 'unknown'
     if (!byUser.has(key)) {
+      const u = f.user || { fullname: 'Unknown', email: 'unknown' }
       byUser.set(key, {
-        user: f.user || { fullname: 'Unknown', email: 'unknown' },
+        label: `${u.fullname || u.email} (${u.email})`,
         isOwn: false,
         files: [],
+        user: u,
       })
     }
     byUser.get(key).files.push(f)
   }
   const result = []
   if (ownFiles.length > 0) {
-    result.push({ user: null, isOwn: true, files: ownFiles })
+    result.push({ label: `Your files -- ${ownFiles.length} files, ${ownFiles.filter((f) => f.verified).length} verified`, isOwn: true, files: ownFiles })
   }
-  result.push(...Array.from(byUser.values()))
+  for (const g of byUser.values()) {
+    g.label = `${g.label} -- ${g.files.length} files, ${g.files.filter((f) => f.verified).length} verified`
+    result.push(g)
+  }
   return result
 })
 
@@ -289,50 +314,38 @@ onMounted(load)
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
-    <header class="border-b border-slate-200 bg-white px-4 py-2 shadow-sm">
-      <div class="mx-auto flex max-w-6xl items-center justify-between">
-        <img src="/logo.svg" alt="JS Playground" class="h-8 opacity-80" />
-        <div class="flex items-center gap-2">
-          <router-link
-            v-if="isAdmin"
-            to="/users"
-            class="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Users
-          </router-link>
-          <router-link
-            to="/files/new"
-            class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-          >
-            New file
-          </router-link>
-          <button
-            type="button"
-            class="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            @click="triggerImport"
-          >
-            Import
-          </button>
-          <input
-            ref="importInputRef"
-            type="file"
-            accept=".js,.ts,.mjs"
-            class="hidden"
-            @change="onImport"
-          />
-          <button
-            type="button"
-            class="rounded border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            @click="logout"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
-    </header>
+  <div class="flex min-h-screen flex-col bg-slate-50">
+    <AppHeader>
+      <router-link
+        v-if="isAdmin"
+        to="/users"
+        class="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+      >
+        Users
+      </router-link>
+      <router-link
+        to="/files/new"
+        class="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+      >
+        New file
+      </router-link>
+      <button
+        type="button"
+        class="rounded border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+        @click="triggerImport"
+      >
+        Import
+      </button>
+      <input
+        ref="importInputRef"
+        type="file"
+        accept=".js,.ts,.mjs"
+        class="hidden"
+        @change="onImport"
+      />
+    </AppHeader>
 
-    <main class="mx-auto max-w-6xl px-4 py-4">
+    <main class="flex-1 px-2 py-4">
       <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-200 px-4 py-2">
           <h2 class="text-sm font-medium text-slate-800">Your files</h2>
@@ -387,6 +400,14 @@ onMounted(load)
               {{ u.fullname || u.email }}
             </option>
           </select>
+          <select
+            v-model="groupBy"
+            class="rounded border border-slate-300 px-2 py-1 text-xs"
+          >
+            <option value="author">Group by author</option>
+            <option value="verified">Group by verified</option>
+            <option value="none">No grouping</option>
+          </select>
         </div>
 
         <div v-if="selectedFileIds.size > 0 && isAdmin" class="flex items-center gap-2 border-b border-amber-200 bg-amber-50 px-4 py-1.5">
@@ -419,27 +440,25 @@ onMounted(load)
         </div>
 
         <template v-else>
-          <template v-for="group in groupedFiles" :key="group.isOwn ? 'own' : (group.user?.email ?? 'other')">
-            <div v-if="isAdmin && (group.isOwn || group.user)" class="border-b border-slate-100 bg-slate-50 px-4 py-1">
-              <span v-if="group.isOwn" class="text-xs font-medium text-slate-700">
-                Your files -- {{ group.files.length }} files, {{ group.files.filter((f) => f.verified).length }} verified
-              </span>
-              <span v-else class="text-xs font-medium text-slate-600">
-                {{ group.user.fullname || group.user.email }} ({{ group.user.email }}) -- {{ group.files.length }} files, {{ group.files.filter((f) => f.verified).length }} verified
+          <template v-for="(group, idx) in groupedFiles" :key="group.label || `group-${idx}`">
+            <div v-if="isAdmin && group.label" class="border-b border-slate-100 bg-slate-50 px-4 py-1">
+              <span class="text-xs font-medium" :class="group.isOwn ? 'text-slate-700' : 'text-slate-600'">
+                {{ group.label }}
               </span>
             </div>
             <table class="w-full table-fixed">
               <colgroup>
                 <col v-if="isAdmin" style="width: 28px" />
-                <col style="width: 30%" />
-                <col style="width: 36px" />
                 <col style="width: 24%" />
-                <col style="width: 16%" />
+                <col v-if="isAdmin" style="width: 16%" />
+                <col style="width: 36px" />
+                <col style="width: 20%" />
+                <col style="width: 14%" />
                 <col style="width: auto" />
               </colgroup>
               <thead>
                 <tr class="border-b border-slate-200 text-left text-xs text-slate-500">
-                  <th v-if="isAdmin" class="px-1 py-2">
+                  <th v-if="isAdmin" class="w-7 py-2">
                     <input
                       v-if="group.files.length"
                       type="checkbox"
@@ -462,6 +481,7 @@ onMounted(load)
                     </template>
                     <span v-else>Name</span>
                   </th>
+                  <th v-if="isAdmin" class="px-4 py-2 font-medium">Author</th>
                   <th class="px-1 py-2 text-center font-medium">
                     <template v-if="isAdmin">
                       <button
@@ -498,11 +518,11 @@ onMounted(load)
                   :key="file.id"
                   class="border-b border-slate-100 hover:bg-slate-50"
                 >
-                  <td v-if="isAdmin" class="px-1 py-2">
+                  <td v-if="isAdmin" class="w-7 py-2">
                     <input
                       type="checkbox"
                       :checked="selectedFileIds.has(file.id)"
-                      class="h-3.5 w-3.5 rounded"
+                      class="mx-auto block h-3.5 w-3.5 rounded"
                       @change="toggleSelect(file)"
                     />
                   </td>
@@ -536,6 +556,9 @@ onMounted(load)
                         </button>
                       </template>
                     </div>
+                  </td>
+                  <td v-if="isAdmin" class="truncate px-4 py-2 text-xs text-slate-600" :title="file.user?.fullname || file.user?.email || '-'">
+                    {{ file.user?.fullname || file.user?.email || '-' }}
                   </td>
                   <td class="px-1 py-2 text-center align-middle">
                     <template v-if="isAdmin">
@@ -599,6 +622,8 @@ onMounted(load)
         </template>
       </div>
     </main>
+
+    <AppFooter />
 
     <Teleport to="body">
       <div
