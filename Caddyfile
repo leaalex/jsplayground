@@ -1,6 +1,6 @@
 design-x-dev.ru {
     reverse_proxy frontend:80
 }
-designxdev.ru{
+designxdev.ru {
     reverse_proxy frontend:80
 }
